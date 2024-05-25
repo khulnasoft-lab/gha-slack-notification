@@ -1,0 +1,96 @@
+name: Continuous Integration
+permissions: read-all
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  # yamllint disable-line rule:line-length
+  group: "${{ github.workflow }}-${{ github.head_ref || github.run_id }}"
+  cancel-in-progress: true
+
+jobs:
+  linters:
+    timeout-minutes: 20
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 🔧
+        uses: actions/setup-python@v4.5.0
+        with:
+          python-version: 3.11.2
+
+      - name: Download actionlint
+        id: get_actionlint
+        # yamllint disable-line rule:line-length
+        run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) 1.6.15
+
+      - name: Test 🔍
+        run: |
+          # nosemgrep: generic.ci.security.use-frozen-lockfile.use-frozen-lockfile-pip
+          pip install semgrep yamllint
+          semgrep --config=auto --error
+          yamllint .
+          ${{ steps.get_actionlint.outputs.executable }} -color
+
+  local-action-run-with-message:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3.3.0
+      - name: Report status 🔍
+        if: always()
+        uses: ./
+        with:
+          message: "Hi from pull request \"#${{github.event.number}}\".\n```Block code```\nthird line"
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WORKFLOWS_TEST_WEBHOOK }}
+
+  local-action-run-with-deploy:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3.3.0
+      - name: Report status 🔍
+        if: always()
+        uses: ./
+        with:
+          type: deploy-start
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WORKFLOWS_TEST_WEBHOOK }}
+
+      - name: Report stop
+        if: always()
+        uses: ./
+        with:
+          type: deploy-finish
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WORKFLOWS_TEST_WEBHOOK }}
+
+
+  local-action-run-with-relase:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3.3.0
+      - name: Report status 🔍
+        if: always()
+        uses: ./
+        with:
+          project: custom-name
+          type: release-start
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WORKFLOWS_TEST_WEBHOOK }}
+
+      - name: Report stop
+        if: always()
+        uses: ./
+        with:
+          project: custom-name
+          type: release-finish
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WORKFLOWS_TEST_WEBHOOK }}
