@@ -130,7 +130,7 @@ runs:
         SLACK_TEXT_MESSAGE=$(echo "$SLACK_TEXT_MESSAGE" | jq -Rsa .)
         echo "SLACK_TEXT_MESSAGE=${SLACK_TEXT_MESSAGE}" >> "$GITHUB_OUTPUT"
 
-    - uses: slackapi/slack-github-action@v1.26.0
+    - uses: slackapi/slack-github-action@v1.27.0
       with:
         # yamllint disable rule:line-length
         payload: |
@@ -160,7 +160,7 @@ runs:
         SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
 
-    - uses: slackapi/slack-github-action@v1.26.0
+    - uses: slackapi/slack-github-action@v1.27.0
       if: ${{ job.status == 'failure' && inputs.FAILURE_ONLY_SLACK_WEBHOOK_URL != '' }}
       with:
         # yamllint disable rule:line-length
